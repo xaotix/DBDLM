@@ -102,3 +102,14 @@ E:\Documentos\Projetos\CadastroDBPLM_Novo\DB\DB\obj\Debug\DB.csproj.CopyComplete
 E:\Documentos\Projetos\CadastroDBPLM_Novo\DB\DB\obj\Debug\DB.dll
 E:\Documentos\Projetos\CadastroDBPLM_Novo\DB\DB\obj\Debug\DB.pdb
 E:\Documentos\Projetos\CadastroDBPLM_Novo\DB\DB\obj\Debug\DB.csprojAssemblyReference.cache
+E:\Documentos\Projetos\DBDLM\DB\bin\Debug\DB.dll.config
+E:\Documentos\Projetos\DBDLM\DB\bin\Debug\DB.dll
+E:\Documentos\Projetos\DBDLM\DB\bin\Debug\DB.pdb
+E:\Documentos\Projetos\DBDLM\DB\bin\Debug\Ionic.Zip.dll
+E:\Documentos\Projetos\DBDLM\DB\bin\Debug\MySql.Data.dll
+E:\Documentos\Projetos\DBDLM\DB\bin\Debug\MySqlBackup.dll
+E:\Documentos\Projetos\DBDLM\DB\obj\Debug\DB.csprojAssemblyReference.cache
+E:\Documentos\Projetos\DBDLM\DB\obj\Debug\DB.csproj.CoreCompileInputs.cache
+E:\Documentos\Projetos\DBDLM\DB\obj\Debug\DB.csproj.CopyComplete
+E:\Documentos\Projetos\DBDLM\DB\obj\Debug\DB.dll
+E:\Documentos\Projetos\DBDLM\DB\obj\Debug\DB.pdb

@@ -19,6 +19,7 @@ namespace DB
 
     public class Banco
     {
+        public int Timeout { get; set; } = 120;
         private static int Instancia { get; set; } = 0;
         private int _Instancia { get; set; } = 0;
         public string ArquivoLog
@@ -82,7 +83,8 @@ namespace DB
             var line = frame.GetFileLineNumber();
             Log(
 
-                Mensagem + "Erro interno: "
+                Mensagem + "Erro interno: \n"
+                + this.BancoDeDados + "." + this.TabelaAtual +"\n"
                 + ex.Message + " - "
                 + st.ToString() + " - "
                 + frame.ToString() + " - Linha:"
@@ -302,6 +304,7 @@ namespace DB
         }
         private MySqlCommand ExecutarComando(string Comando, ref DataTable Tab, out MySqlConnection con)
         {
+            if(Comando==null | Comando.Length == 0) { con = null; return null; }
             MySqlCommand MySQLComando = new MySqlCommand();
             con = null;
             Tab = new DataTable();
@@ -312,8 +315,10 @@ namespace DB
                 MySQLComando.Connection = con;
                 MySQLComando.CommandText = Comando;
                 MySQLComando.CommandType = CommandType.Text;
+                MySQLComando.CommandTimeout = Timeout;
                 MinhasExecucoes = new MySqlDataAdapter();
                 MinhasExecucoes.SelectCommand = MySQLComando;
+                
                 MinhasExecucoes.Fill(Tab);               
                 MinhasExecucoes.Dispose();
 
@@ -322,7 +327,7 @@ namespace DB
             }
             catch (Exception ex)
             {
-                Log("Erro", ex);
+                Log("Erro", ex + "\n\nComando:" + Comando + "\n\n");
                 Desconectar(con);
             }
             return MySQLComando;
@@ -334,9 +339,17 @@ namespace DB
             {
                 Database = this.BancoDeDados;
             }
+            else
+            {
+                this.BancoDeDados = Database;
+            }
             if (Tabela == null)
             {
                 Tabela = TabelaAtual;
+            }
+            else
+            {
+                this.TabelaAtual = Tabela;
             }
 
             if (Colunas == null)
@@ -657,10 +670,20 @@ namespace DB
             {
                 Database = this.BancoDeDados;
             }
+            else
+            {
+                this.BancoDeDados = Database;
+            }
             if (Tabela == null)
             {
                 Tabela = this.TabelaAtual;
             }
+            else
+            {
+                this.TabelaAtual = Tabela;
+            }
+
+
             List<string> Colunas = new List<string>();
             GetColunas(Database, Tabela, ref Colunas);
             string chaveComando = "";

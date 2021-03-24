@@ -10,9 +10,19 @@ using System.Threading;
 
 namespace DB
 {
-    internal class DBUtilz
+    internal static class DBUtilz
     {
+        public static List<List<T>> quebrar_lista<T>(this List<T> locations, int maximo = 30)
+        {
+            var list = new List<List<T>>();
 
+            for (int i = 0; i < locations.Count; i += maximo)
+            {
+                list.Add(locations.GetRange(i, Math.Min(maximo, locations.Count - i)));
+            }
+
+            return list;
+        }
         public static string RaizAppData()
         {
             return CriarPasta(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + @"\", "DB" + System.Windows.Forms.Application.ProductVersion);
@@ -75,60 +85,6 @@ namespace DB
         }
         private static System.Globalization.CultureInfo US = new System.Globalization.CultureInfo("en-US");
         private static System.Globalization.CultureInfo BR = new System.Globalization.CultureInfo("pt-BR");
-        //public static double Double(object comp, int Decimais = 4)
-        //{
-        //    //string comps = comp.ToString();
-        //    //if (comps == "") { comps = "0"; }
-        //    //try
-        //    //{
-        //    //    return Math.Round(double.Parse(comps.Replace(",", "."), System.Globalization.CultureInfo.InvariantCulture),Decimais);
-        //    //    //return Math.Round(Convert.ToDouble(comps.Replace(".",",")),Decimais);
-        //    //}
-        //    //catch (Exception)
-        //    //{
-
-        //    //    return 0;
-        //    //}
-        //    try
-        //    {
-
-        //        double val;
-        //        if (double.TryParse(comp.ToString(), System.Globalization.NumberStyles.Float, BR, out val))
-        //        {
-        //            try
-        //            {
-        //                return Math.Round(val, Decimais);
-
-        //            }
-        //            catch (Exception)
-        //            {
-
-        //                return val;
-        //            }
-        //        }
-
-        //        else if (double.TryParse(comp.ToString(), System.Globalization.NumberStyles.Float, US, out val))
-        //        {
-        //            try
-        //            {
-
-        //                return Math.Round(val, Decimais);
-        //            }
-        //            catch (Exception)
-        //            {
-        //                return val;
-        //            }
-        //        }
-        //        else return 0;
-        //    }
-        //    catch (Exception)
-        //    {
-
-        //        return 0;
-        //    }
-
-
-        //}
 
         public static double Double(object comp, int Decimais = 4)
         {

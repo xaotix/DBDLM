@@ -37,6 +37,11 @@ namespace DB
             }
         }
 
+
+        public void Log(string Mensagem)
+        {
+            Log(Mensagem, ArquivoLog);
+        }
         public void Log(string Mensagem, string Logfile)
         {
             try
@@ -302,6 +307,7 @@ namespace DB
             return MySQLComando;
 
         }
+        public DataTable Retorno { get; set; }
         private MySqlCommand ExecutarComando(string Comando, ref DataTable Tab, out MySqlConnection con)
         {
             if(Comando==null | Comando.Length == 0) { con = null; return null; }
@@ -328,44 +334,12 @@ namespace DB
             catch (Exception ex)
             {
                 Log("Erro", ex + "\n\nComando:" + Comando + "\n\n");
-                Desconectar(con);
             }
             return MySQLComando;
 
         }
-        private List<string> GetColunas(string Database, string Tabela, ref List<string> Colunas)
-        {
-            if (Database == null)
-            {
-                Database = this.BancoDeDados;
-            }
-            else
-            {
-                this.BancoDeDados = Database;
-            }
-            if (Tabela == null)
-            {
-                Tabela = TabelaAtual;
-            }
-            else
-            {
-                this.TabelaAtual = Tabela;
-            }
 
-            if (Colunas == null)
-            {
-                Colunas = RetornarColunas(Database, Tabela);
-            }
-            else
-            {
-                if (Colunas.Count == 0)
-                {
-                    Colunas = RetornarColunas(Database, Tabela);
-                }
-            }
-            return Colunas;
-        }
-        public List<string> RetornarDatabases()
+        public List<string> GetDbases()
         {
             List<string> databases = new List<string>();
                 MySqlConnection con;
@@ -396,7 +370,7 @@ namespace DB
             Desconectar(con);
             return databases;
         }
-        public List<string> RetornarTabelas(string Database)
+        public List<string> GetTabelas(string Database)
         {
             BancoDeDados = Database;
             MySqlConnection con = null;
@@ -425,59 +399,55 @@ namespace DB
             Desconectar(con);
             return tabelas;
         }
-        public List<string> RetornarColunas(string Database, string Tabela)
+
+        internal static List<Colunas> colunas { get; set; } = new List<Colunas>();
+        public List<string> GetColunas(string Database, string Tabela)
         {
             BancoDeDados = Database;
             TabelaAtual = Tabela;
-            var colunas = new List<String>();
-            // var instrucaoSQL = "SELECT Name FROM SYS.COLUMNS WHERE OBJECT_ID IN (SELECT OBJECT_ID FROM SYS.TABLES WHERE Name = '" + Tabela + "')";
-            var instrucaoSQL = "select column_name from information_schema.columns where table_name='" + Tabela + "' and table_schema = '" + BancoDeDados + "'";
-            //var instrucaoSQL = "select column_name from information_schema.columns where table_name='" + Tabela + "'";
-            MySqlConnection con = null;
+            var colunas = new List<string>();
             try
             {
-                var TableBuffer = new DataTable();
-                MySqlCommand ex = ExecutarComando(instrucaoSQL, ref TableBuffer, out con);
-                var sqlDataReader = ex.ExecuteReader();
-                if (sqlDataReader.HasRows)
+                var ret = DB.Banco.colunas.Find(x => x.servidor.ToUpper() == this.Servidor.ToUpper() && x.database.ToUpper() == Database.ToUpper() && x.tabela.ToUpper() == Tabela.ToUpper() && x.colunas.Count > 0);
+
+                if (ret != null)
                 {
-                    while (sqlDataReader.Read())
-                    {
-                        colunas.Add(sqlDataReader[0].ToString());
-                    }
-                    sqlDataReader.Close();
-                    sqlDataReader.Dispose();
+                    colunas.AddRange(ret.colunas);
+                    return colunas;
                 }
+                else
+                {
+                    var instrucaoSQL = "select column_name from information_schema.columns where table_name='" + Tabela + "' and table_schema = '" + BancoDeDados + "'";
+                    MySqlConnection con = null;
+
+                    var TableBuffer = new DataTable();
+                    MySqlCommand ex = ExecutarComando(instrucaoSQL, ref TableBuffer, out con);
+                    var sqlDataReader = ex.ExecuteReader();
+                    if (sqlDataReader.HasRows)
+                    {
+                        while (sqlDataReader.Read())
+                        {
+                            colunas.Add(sqlDataReader[0].ToString());
+                        }
+                        sqlDataReader.Close();
+                        sqlDataReader.Dispose();
+
+                        DB.Banco.colunas.Add(new Colunas(this.Servidor, Database, Tabela, colunas));
+                    }
+
+                    Desconectar(con);
+                }
+
             }
             catch (Exception ex)
             {
                 Log("Erro", ex);
             }
-            Desconectar(con);
             return colunas;
         }
 
 
-        public Banco(string Servidor, string Porta, string Usuario, string Senha, string BancoDeDados)
-        {
-            Instancia = Instancia + 1;
-            this._Instancia = Instancia;
-            this.Servidor = Servidor;
-            this.Porta = Porta;
-            this.Usuario = Usuario;
-            this.Senha = Senha;
-            this.BancoDeDados = BancoDeDados;
-        }
-        public Banco(Banco Conexao)
-        {
-            this.Servidor = Conexao.Servidor;
-            this.Porta = Conexao.Porta;
-            this.Usuario = Conexao.Usuario;
-            this.Senha = Conexao.Senha;
-            this.BancoDeDados = Conexao.BancoDeDados;
-            Instancia = Instancia + 1;
-            this._Instancia = Instancia;
-        }
+
         public void Importar(string Arquivo)
         {
             if (File.Exists(Arquivo))
@@ -561,10 +531,10 @@ namespace DB
   
 
 
-        public Tabela Consulta(Celula Criterio, bool Exato = true, string Database = null, string Tabela = null, List<string> Colunas = null)
+        public Tabela Consulta(Celula Criterio, bool Exato, string Database, string Tabela)
         {
             List<Linha> Retorno = new List<Linha>();
-            GetColunas(Database, Tabela, ref Colunas);
+           var  Colunas = GetColunas(Database, Tabela);
             string Comando = "";
             if (Exato == true)
             {
@@ -578,10 +548,10 @@ namespace DB
 
             return new DB.Tabela(Retorno, Tabela);
         }
-        public Tabela Consulta(List<Celula> Criterios, bool Exato = true, string Database = null, string Tabela = null, List<string> Colunas = null, string condicional = "And")
+        public Tabela Consulta(List<Celula> Criterios, bool Exato, string Database, string Tabela, string condicional = "And")
         {
             List<Linha> Retorno = new List<Linha>();
-            GetColunas(Database, Tabela, ref Colunas);
+            var Colunas = GetColunas(Database, Tabela);
             string Comando = "select * from " + Database + "." + Tabela + " where ";
             if (Exato == true)
             {
@@ -633,8 +603,6 @@ namespace DB
 
                     {
 
-                        //Retorno.Add(sqlDataReader);
-
                         Linha nl = new DB.Linha("Comando");
 
                         foreach (string Coluna in Colunas)
@@ -663,7 +631,7 @@ namespace DB
             return Retorno;
         }
 
-        public void Apagar(List<Celula> Filtro, string Database = null, string Tabela = null, string condicional = "And")
+        public bool Apagar(List<Celula> Filtro, string Database, string Tabela, string condicional = "And")
         {
             var TableBuffer = new DataTable();
             if (Database == null)
@@ -684,26 +652,31 @@ namespace DB
             }
 
 
-            List<string> Colunas = new List<string>();
-            GetColunas(Database, Tabela, ref Colunas);
-            string chaveComando = "";
-            for (int i = 0; i < Filtro.Count; i++)
+            List<string> Colunas = GetColunas(Database, Tabela);
+            Filtro = Filtro.FindAll(x => Colunas.Find(y => y.ToUpper() == x.Coluna.ToUpper()) != null);
+            if(Filtro.Count>0)
             {
-                chaveComando = chaveComando + "`" + Filtro[i].Coluna + "` = '" + MySql.Data.MySqlClient.MySqlHelper.EscapeString(Filtro[i].Valor) + "'";
-                if (i < Filtro.Count - 1)
+                string chaveComando = "";
+                for (int i = 0; i < Filtro.Count; i++)
                 {
-                    chaveComando = chaveComando + " " + condicional + " ";
+                    chaveComando = chaveComando + "`" + Filtro[i].Coluna + "` = '" + MySql.Data.MySqlClient.MySqlHelper.EscapeString(Filtro[i].Valor) + "'";
+                    if (i < Filtro.Count - 1)
+                    {
+                        chaveComando = chaveComando + " " + condicional + " ";
+                    }
                 }
+
+
+
+                string ComandoFIM = "";
+
+                ComandoFIM = "DELETE FROM " + Tabela + " Where " + chaveComando;
+               var cc = ExecutarComando(ComandoFIM);
+                return cc != null;
             }
 
-
-
-            string ComandoFIM = "";
-
-            ComandoFIM = "DELETE FROM " + Tabela + " Where " + chaveComando;
-            MySqlConnection con;
-            ExecutarComando(ComandoFIM, ref TableBuffer, out con);
-            Desconectar(con);
+            return false;
+          
         }
         /// <summary>
         /// 
@@ -712,144 +685,76 @@ namespace DB
         /// <param name="Database">Banco de Dados onde os dados serão Armazenados</param>
         /// <param name="Tabela">Tabela onde os dados serão Armazenados</param>
         /// <returns></returns>
-        public long Cadastro(List<Celula> Valores, string Database = null, string Tabela = null)
+        public long Cadastro(List<Celula> Valores, string Database, string Tabela)
         {
-            string arq = "";
+            
             TabelaAtual = Valores[0].Tabela;
 
-            if (Database == null)
-            {
-                Database = this.BancoDeDados;
-            }
-            if (Tabela == null)
-            {
-                Tabela = this.TabelaAtual;
-            }
             
 
-            //Verifica se há algum endereço de arquivo para cadastrar
-            if (Valores.FindAll(X => X.isArquivo).Count > 0)
+
+            try
             {
-                try
+                List<string> Colunas = GetColunas(Database, Tabela);
+
+                if(Colunas.Count==0)
+                {
+                    return -1;
+                }
+                string Comando = Comando = $"INSERT INTO {Database}.{Tabela} (";
+                Valores = Valores.FindAll(x => Colunas.Find(y => y.ToUpper() == x.Coluna.ToUpper()) != null);
+                string Columns = "";
+                string Vals = "";
+                if(Valores.Count==0)
+                {
+                    return -1;
+                }
+                for (int i = 0; i < Valores.Count(); i++)
                 {
 
-                    string colunas = "";
-                    string keys = "";
-
-                    MySql.Data.MySqlClient.MySqlConnection conn;
-                    MySql.Data.MySqlClient.MySqlCommand cmd;
-
-                    conn = new MySql.Data.MySqlClient.MySqlConnection();
-                    cmd = new MySql.Data.MySqlClient.MySqlCommand();
-
-                    //conn.ConnectionString = "server=nbvmsmysql90;uid=root;pwd=root;database=teste";
-                    conn.ConnectionString = string.Format("server={0};uid={1};pwd={2};database={3};Port={4}", Servidor, Usuario, Senha, Database,Porta);
-                    conn.Open();
-                    cmd.Connection = conn;
-
-                    for (int i = 0; i < Valores.Count; i++)
+                    Columns = Columns + "`" + Valores[i].Coluna + "`";
+                    Vals = Vals + "'" + MySql.Data.MySqlClient.MySqlHelper.EscapeString(Valores[i].Valor.Replace(",", ".")) + "'";
+                    if (i < Valores.Count - 1)
                     {
-
-                        keys = keys + "@" + Valores[i].Coluna;
-                        colunas = colunas + Valores[i].Coluna;
-
-                        if (i < Valores.Count - 1)
-                        {
-                            keys = keys + ", ";
-                            colunas = colunas + ", ";
-                        }
-
+                        Columns = Columns + ",";
+                        Vals = Vals + ",";
                     }
-
-                    string SQL = "INSERT INTO " + Tabela + " (" + colunas + ") VALUES (" + keys + ")";
-                    cmd.CommandText = SQL;
-
-                    foreach (var val in Valores)
-                    {
-                        if (val.isArquivo)
-                        {
-                            if (val.arquivo()!=null)
-                            {
-
-                                
-
-                                cmd.Parameters.AddWithValue("@" + val.Coluna + "", val.arquivo());
-
-                            }
-                            else
-                            {
-                                arq = val.Valor;
-
-                                Log("Falha ao Cadastrar. Arquivo " + arq + " não existe.",ArquivoLog);
-                            }
-                        }
-                        else
-                        {
-                            cmd.Parameters.AddWithValue("@" + val.Coluna, val.Valor);
-                        }
-                    }
-
-                    cmd.ExecuteNonQuery();
-                    conn.Dispose();
-                    conn.Close();
-                    return cmd.LastInsertedId;
                 }
-                catch (MySql.Data.MySqlClient.MySqlException ex)
-                {
-                    Log("Erro", ex);
-                }
+                Comando = Comando + Columns + ") values (" + Vals + ")";
+                var TableBuffer = new DataTable();
+                MySqlConnection con;
+                MySqlCommand cc = ExecutarComando(Comando, ref TableBuffer, out con);
+                Desconectar(con);
+                return cc.LastInsertedId;
+
             }
-            else
+            catch (Exception ex)
             {
-                try
-                {
-                    List<string> Colunas = new List<string>();
-                    GetColunas(Database, Tabela, ref Colunas);
-                    string Comando = Comando = "INSERT INTO " /*+ Database + "."*/ + Tabela + " (";
-                    Valores = Valores.FindAll(x => Colunas.Find(y => y == x.Coluna) != null);
-                    string Columns = "";
-                    string Vals = "";
-                    for (int i = 0; i < Valores.Count(); i++)
-                    {
+                Log("Erro", ex);
 
-                        Columns = Columns + "`" + Valores[i].Coluna + "`";
-                        Vals = Vals + "'" + MySql.Data.MySqlClient.MySqlHelper.EscapeString(Valores[i].Valor.Replace(",", ".")) + "'";
-                        if (i < Valores.Count - 1)
-                        {
-                            Columns = Columns + ",";
-                            Vals = Vals + ",";
-                        }
-                    }
-                    Comando = Comando + Columns + ") values (" + Vals + ")";
-                    var TableBuffer = new DataTable();
-                    MySqlConnection con;
-                    MySqlCommand cc = ExecutarComando(Comando, ref TableBuffer, out con);
-                    Desconectar(con);
-                    return cc.LastInsertedId;
-
-                }
-                catch (Exception ex)
-                {
-                    Log("Erro", ex);
-
-                }
-                return -1;
             }
 
             return -1;
         }
 
-        /// <summary>
-        /// Realiza download de arquivos salvos no DataBase
-        /// </summary>
-        /// <param name="campo">Campo da Tabela onde o arquivo está Armazenado</param>
-        /// <param name="ChavesFiltro">Parâmetros para a Pesquisa (Where)</param>
-        /// <param name="path">caminho/nome/extensão do aqruivo (será salvo no computador com este caminho/nome/extensão)</param>
-        /// <param name="Database">Banco de Dados onde os dados estão Armazenados</param>
-        /// <param name="Tabela">Tabela onde os dados estão Armazenados</param>
-        public void Download(string campo, List<Celula> ChavesFiltro, string path, string Database = null, string Tabela = null)
+
+        public bool Cadastro(List<Linha> linhas, string Database, string Tabela)
         {
-            this.TabelaAtual = ChavesFiltro[0].Tabela;
+            linhas = linhas.FindAll(x => x != null);
+            bool retorno = true;
+
+            if(linhas.Count==0)
+            {
+                return true;
+            }
+            if(Database=="")
+            {
+                return false;
+            }
+            if(Tabela=="")
+            {
+                return false;
+            }
 
             if (Database == null)
             {
@@ -860,46 +765,140 @@ namespace DB
                 Tabela = this.TabelaAtual;
             }
 
+
+            //Verifica se há algum endereço de arquivo para cadastrar
             try
             {
-                MySql.Data.MySqlClient.MySqlConnection conn;
-                MySql.Data.MySqlClient.MySqlCommand cmd;
-
-                conn = new MySql.Data.MySqlClient.MySqlConnection();
-                cmd = new MySql.Data.MySqlClient.MySqlCommand();
-
-                conn.ConnectionString = string.Format("server={0};uid={1};pwd={2};database={3};Port={4}", Servidor, Usuario, Senha, Database,Porta);
-                conn.Open();
-                string chaveComando = "";
-
-                for (int i = 0; i < ChavesFiltro.Count; i++)
+                List<string> Colunas =  GetColunas(Database, Tabela);
+                if(Colunas.Count==0)
                 {
-                    chaveComando = chaveComando + "`" + ChavesFiltro[i].Coluna + "` = '" + MySql.Data.MySqlClient.MySqlHelper.EscapeString(ChavesFiltro[i].Valor) + "'";
-                    if (i < ChavesFiltro.Count - 1)
+                    Log($"Comando 'Cadastro' com linhas: ao procurar colunas {Servidor} = {Database}.{Tabela} retornou zero.");
+                    return false;
+                }
+
+                //lista todas as colunas das linhas
+                var cols_linhas = linhas.SelectMany(x => x.Celulas).ToList().FindAll(x=>x!=null).Select(x => x.Coluna.ToUpper()).Distinct().ToList().OrderBy(x => x).ToList();
+
+
+                var cols_existem = cols_linhas.FindAll(x => Colunas.Find(y => y.ToUpper() == x.ToUpper()) != null);
+
+                var pacotes = DBUtilz.quebrar_lista(linhas, Max_Registos_Simultaneos);
+
+
+                if(cols_existem.Count>0)
+                {
+                    string Comando_Colunas = Comando_Colunas = $"INSERT INTO {Database}.{Tabela} (";
+                    for (int i = 0; i < cols_existem.Count; i++)
                     {
-                        chaveComando = chaveComando + " AND ";
+                        Comando_Colunas = Comando_Colunas + $"`{cols_existem[i]}`" ;
+                        if(i<cols_existem.Count-1)
+                        {
+                            Comando_Colunas = Comando_Colunas + ", ";
+                        }
+                    }
+
+                    Comando_Colunas = Comando_Colunas + ") values ";
+
+
+                    foreach(var pacote in pacotes)
+                    {
+                        string comando_valores = "";
+
+                        foreach (var l in pacote)
+                        {
+
+                            string comando_linha = "";
+                            for (int i = 0; i < cols_existem.Count; i++)
+                            {
+                                var igual = l.Get(cols_existem[i]);
+                                if(igual.existe)
+                                {
+                                    comando_linha = comando_linha + $"'{MySql.Data.MySqlClient.MySqlHelper.EscapeString(igual.valor.Replace(",", "."))}'";
+                                }
+                                else
+                                {
+                                    comando_linha = comando_linha + "NULL";
+                                }
+                                if (i < cols_existem.Count - 1)
+                                {
+                                    comando_linha = comando_linha + ", ";
+                                }
+                            }
+                            if(comando_linha!="")
+                            {
+                                comando_valores = comando_valores + (comando_valores!=""?", ":"") + $"({comando_linha})";
+                            }
+                        }
+
+                       
+                        if(comando_valores!="")
+                        {
+                            string comando_final = Comando_Colunas + comando_valores;
+                            var Tab = new DataTable();
+                            MySqlConnection con;
+                            MySqlCommand cc = ExecutarComando(comando_final,ref Tab,out con);
+                            Desconectar(con);
+                            if (cc.LastInsertedId>0)
+                            {
+                                foreach(var l in pacote)
+                                {
+                                    l.Cadastrou = true;
+                                }
+                            }
+                            else
+                            {
+                                Log($"Comando 'Cadastro' com linhas:  {Servidor} = {Database}.{Tabela} não fez registros.\nComando:\n\n{comando_final}\n\n");
+                                retorno = false;
+                            }
+                        }
+                        else
+                        {
+                            Log($"Comando 'Cadastro' com linhas:  {Servidor} = {Database}.{Tabela} não conseguiu montar a lista para registros.");
+                            retorno = false;
+                        }
                     }
                 }
-
-                string sql = string.Format("Select {0} from {1} where {2}", campo, Tabela, chaveComando);
-
-                cmd.CommandText = sql;
-                cmd.Connection = conn;
-                cmd.ExecuteNonQuery();
-
-                byte[] buffer = (byte[])cmd.ExecuteScalar();
-                using (FileStream fs = new FileStream(path, FileMode.Create))
+                else
                 {
-                    fs.Write(buffer, 0, buffer.Length);
+                    Log($"Comando 'Cadastro' com linhas:  {Servidor} = {Database}.{Tabela} Nenhuma das colunas setadas existe na tabela: " +
+                        $"\n[Colunas setadas:]\n" +
+                        $"{string.Join(", ",cols_linhas)}" +
+                        $"\n\n[Colunas na tabela:]\n" +
+                        $"{string.Join(", ",Colunas)}");
                 }
 
-                conn.Close();
+                
+               
+
+              
+
             }
-            catch (MySql.Data.MySqlClient.MySqlException ex)
+            catch (Exception ex)
             {
                 Log("Erro", ex);
+                retorno = false;
             }
+
+            if(!retorno)
+            {
+              if(File.Exists(ArquivoLog))
+                {
+                    try
+                    {
+                       
+                        Process.Start(ArquivoLog);
+                    }
+                    catch (Exception)
+                    {
+
+                    }
+                }
+            }
+            return retorno;
+
         }
+
+        public int Max_Registos_Simultaneos { get; set; } = 30;
 
         /// <summary>
         /// 
@@ -908,7 +907,7 @@ namespace DB
         /// <param name="ColunasAEditar">Colunas que devem ser Alteradas</param>
         /// <param name="Database">Banco de Dados onde os dados estão Armazenados</param>
         /// <param name="Tabela">Tabela onde os dados estão Armazenados</param>
-        public void Update(List<Celula> ChavesFiltro, List<Celula> ColunasAEditar, string Database = null, string Tabela = null)
+        public void Update(List<Celula> ChavesFiltro, List<Celula> ColunasAEditar, string Database , string Tabela)
         {
 
             string Comando = "";
@@ -923,119 +922,31 @@ namespace DB
                 Tabela = this.TabelaAtual;
             }
 
-            /*faz upload de arquivo*/
-            if (ColunasAEditar.FindAll(X => X.isArquivo).Count > 0)
+            List<string> Colunas  = GetColunas(Database, Tabela);
+            for (int i = 0; i < ColunasAEditar.Count; i++)
             {
+                Comando = Comando + "`" + ColunasAEditar[i].Coluna + "` = '" + MySql.Data.MySqlClient.MySqlHelper.EscapeString(ColunasAEditar[i].Valor) + "'";
 
-                try
+                if (i < ColunasAEditar.Count - 1)
                 {
-
-
-                    MySql.Data.MySqlClient.MySqlConnection conn;
-                    MySql.Data.MySqlClient.MySqlCommand cmd;
-
-                    conn = new MySql.Data.MySqlClient.MySqlConnection();
-                    cmd = new MySql.Data.MySqlClient.MySqlCommand();
-
-                    conn.ConnectionString = string.Format("server={0};uid={1};pwd={2};database={3};Port={4}", Servidor, Usuario, Senha, Database,Porta);
-                    conn.Open();
-
-
-
-                    for (int i = 0; i < ColunasAEditar.Count; i++)
-                    {
-
-                        Comando = Comando + "" + ColunasAEditar[i].Coluna + " = @" + ColunasAEditar[i].Coluna;
-
-                        if (i < ColunasAEditar.Count - 1 && ColunasAEditar.Count > 1)
-                        {
-                            Comando = Comando + " , ";
-                        }
-                    }
-
-                    for (int i = 0; i < ChavesFiltro.Count; i++)
-                    {
-                        chaveComando = chaveComando + "" + ChavesFiltro[i].Coluna + " = '" + MySql.Data.MySqlClient.MySqlHelper.EscapeString(ChavesFiltro[i].Valor) + "'";
-                        if (i < ChavesFiltro.Count - 1)
-                        {
-                            chaveComando = chaveComando + " AND ";
-                        }
-                    }
-
-
-
-                    string sql = "UPDATE " + Database + "." + Tabela + " SET " + Comando + " WHERE " + chaveComando;
-                    cmd.CommandText = sql;
-
-
-                    for (int i = 0; i < ColunasAEditar.Count; i++)
-                    {
-                        if (ColunasAEditar[i].isArquivo && ColunasAEditar[i].arquivo() != null)
-                        {
-                           
-                            cmd.Parameters.AddWithValue("@" + ColunasAEditar[i].Coluna, ColunasAEditar[i].arquivo());
-                        }
-                        else
-                        {
-                            cmd.Parameters.AddWithValue("@" + ColunasAEditar[i].Coluna, ColunasAEditar[i].Valor);
-
-                        }
-                    }
-
-                    cmd.Connection = conn;
-                    cmd.ExecuteNonQuery();
-
-                    conn.Dispose();
-                    conn.Close();
-
+                    Comando = Comando + " , ";
                 }
-                catch (MySql.Data.MySqlClient.MySqlException ex)
-                {
-                    MessageBox.Show("Erro ao executar o Update\n" + Comando + "\nErro " + ex.Number + ": " + ex.Message + "\n" + ex.StackTrace,
-                        "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    Log("Erro", ex);
-
-                }
-
             }
-            else
+
+            for (int i = 0; i < ChavesFiltro.Count; i++)
             {
-
-                List<string> Colunas = new List<string>();
-                GetColunas(Database, Tabela, ref Colunas);
-                for (int i = 0; i < ColunasAEditar.Count; i++)
+                chaveComando = chaveComando + "`" + ChavesFiltro[i].Coluna + "` = '" + MySql.Data.MySqlClient.MySqlHelper.EscapeString(ChavesFiltro[i].Valor) + "'";
+                if (i < ChavesFiltro.Count - 1)
                 {
-                    if (ColunasAEditar[i].isArquivo)
-                    {
-                        Comando = Comando + "`" + ColunasAEditar[i].Coluna + "` = '" + ColunasAEditar[i].Valor + "'";
-
-                    }
-                    else
-                    {
-                        Comando = Comando + "`" + ColunasAEditar[i].Coluna + "` = '" + MySql.Data.MySqlClient.MySqlHelper.EscapeString(ColunasAEditar[i].Valor) + "'";
-                    }
-
-                    if (i < ColunasAEditar.Count - 1)
-                    {
-                        Comando = Comando + " , ";
-                    }
+                    chaveComando = chaveComando + " AND ";
                 }
-
-                for (int i = 0; i < ChavesFiltro.Count; i++)
-                {
-                    chaveComando = chaveComando + "`" + ChavesFiltro[i].Coluna + "` = '" + MySql.Data.MySqlClient.MySqlHelper.EscapeString(ChavesFiltro[i].Valor) + "'";
-                    if (i < ChavesFiltro.Count - 1)
-                    {
-                        chaveComando = chaveComando + " AND ";
-                    }
-                }
-                string ComandoFIM = "";
-                var TableBuffer = new DataTable();
-                ComandoFIM = "UPDATE " +Database + "." + Tabela +  " SET " + Comando + " Where " + chaveComando;
-                MySqlConnection con;
-                ExecutarComando(ComandoFIM,ref TableBuffer, out con);
+            }
+            string ComandoFIM = "";
+            var TableBuffer = new DataTable();
+            ComandoFIM = "UPDATE " + Database + "." + Tabela + " SET " + Comando + " Where " + chaveComando;
+            MySqlConnection con;
+            ExecutarComando(ComandoFIM, ref TableBuffer, out con);
             Desconectar(con);
-            }
 
 
         }
@@ -1049,7 +960,7 @@ namespace DB
         /// <param name="Database">Banco de Dados onde os dados estão Armazenados</param>
         /// <param name="Tabela">Tabela onde os dados estão Armazenados</param>
         /// <param name="Exato">TRUE (Where x = y) - FALSE (Where x LIKE(%y%))</param>
-        public void Update(string ChaveFiltro, string ValorFiltro, List<Celula> ColunasAEditar, string Database = null, string Tabela = null, bool Exato = true)
+        public void Update(string ChaveFiltro, string ValorFiltro, List<Celula> ColunasAEditar, string Database, string Tabela, bool Exato = true)
         {
 
             string arq = "";
@@ -1062,124 +973,53 @@ namespace DB
                 Tabela = this.TabelaAtual;
             }
 
-            if (ColunasAEditar.FindAll(X => X.isArquivo).Count > 0)
+            List<string> Colunas = GetColunas(Database, Tabela);
+            string Comando = "";
+
+            for (int i = 0; i < ColunasAEditar.Count; i++)
             {
-                try
+                Comando = Comando + "`" + ColunasAEditar[i].Coluna + "` = '" + MySql.Data.MySqlClient.MySqlHelper.EscapeString(ColunasAEditar[i].Valor) + "'";
+                if (i < ColunasAEditar.Count - 1)
                 {
-
-                    int FileSize = 0;
-                    byte[] rawData = new byte[0];
-
-                    MySql.Data.MySqlClient.MySqlConnection conn;
-                    MySql.Data.MySqlClient.MySqlCommand cmd;
-
-                    conn = new MySql.Data.MySqlClient.MySqlConnection();
-                    cmd = new MySql.Data.MySqlClient.MySqlCommand();
-
-                    conn.ConnectionString = string.Format("server={0};uid={1};pwd={2};database={3};Port={4}", Servidor, Usuario, Senha, Database,Porta);
-                    conn.Open();
-
-                    string Comando = "";
-
-
-                    for (int i = 0; i < ColunasAEditar.Count; i++)
-                    {
-                        if (ColunasAEditar[i].isArquivo)
-                        {
-
-                            if (System.IO.File.Exists(ColunasAEditar[i].Valor))
-                            {
-                                FileStream fs;
-
-                                fs = new FileStream(ColunasAEditar[i].Valor, FileMode.Open, FileAccess.Read);
-                                FileSize = Convert.ToInt32(fs.Length);
-
-                                rawData = new byte[FileSize];
-                                fs.Read(rawData, 0, FileSize);
-                                fs.Close();
-                                Comando = Comando + "`" + ColunasAEditar[i].Coluna + "` = @" + ColunasAEditar[i].Coluna;
-                            }
-                            else
-                            {
-                                arq = arq + ColunasAEditar[i].Valor;
-                                Log("Falha ao atualizar. Arquivo " + arq + " não existe.", ArquivoLog);
-
-                            }
-                        }
-                        else
-                        {
-                            Comando = Comando + "`" + ColunasAEditar[i].Coluna + "` = '" + MySql.Data.MySqlClient.MySqlHelper.EscapeString(ColunasAEditar[i].Valor) + "'";
-                        }
-
-                        if (i < ColunasAEditar.Count - 1 && ColunasAEditar.Count > 1)
-                        {
-                            Comando = Comando + " , ";
-                        }
-                    }
-
-                    string sql = "";
-                    if (Exato)
-                    {
-                        sql = "UPDATE " + Tabela + " SET " + Comando + " Where " + "`" + ChaveFiltro + "` = " + "'" + ValorFiltro + "'";
-                    }
-                    else
-                    {
-                        sql = "UPDATE " + Tabela + " SET " + Comando + " Where " + "`" + ChaveFiltro + "` LIKE '%" + ValorFiltro + "%'";
-                    }
-
-
-                    cmd.CommandText = sql;
-                    cmd.Connection = conn;
-
-                    for (int i = 0; i < ColunasAEditar.Count; i++)
-                    {
-                        if (ColunasAEditar[i].isArquivo)
-                        {
-                            cmd.Parameters.AddWithValue("@" + ColunasAEditar[i].Coluna, rawData);
-                        }
-                    }
-                    cmd.ExecuteNonQuery();
-                    conn.Close();
-
+                    Comando = Comando + " , ";
                 }
+            }
 
-                catch (MySql.Data.MySqlClient.MySqlException ex)
-                {
-                    Log("Erro", ex);
-
-                }
-
+            string ComandoFIM = "";
+            if (Exato)
+            {
+                ComandoFIM = "UPDATE " + Tabela + " SET " + Comando + " Where " + "`" + ChaveFiltro + "` = " + "'" + ValorFiltro + "'";
             }
             else
             {
-                List<string> Colunas = new List<string>();
-                GetColunas(Database, Tabela, ref Colunas);
-                string Comando = "";
-
-                for (int i = 0; i < ColunasAEditar.Count; i++)
-                {
-                    Comando = Comando + "`" + ColunasAEditar[i].Coluna + "` = '" + MySql.Data.MySqlClient.MySqlHelper.EscapeString(ColunasAEditar[i].Valor) + "'";
-                    if (i < ColunasAEditar.Count - 1)
-                    {
-                        Comando = Comando + " , ";
-                    }
-                }
-
-                string ComandoFIM = "";
-                if (Exato)
-                {
-                    ComandoFIM = "UPDATE " + Tabela + " SET " + Comando + " Where " + "`" + ChaveFiltro + "` = " + "'" + ValorFiltro + "'";
-                }
-                else
-                {
-                    ComandoFIM = "UPDATE " + Tabela + " SET " + Comando + " Where " + "`" + ChaveFiltro + "` LIKE '%" + ValorFiltro + "%'";
-                }
-                var TableBuffer = new DataTable();
-                MySqlConnection con;
-                ExecutarComando(ComandoFIM, ref TableBuffer, out con);
-            Desconectar(con);
+                ComandoFIM = "UPDATE " + Tabela + " SET " + Comando + " Where " + "`" + ChaveFiltro + "` LIKE '%" + ValorFiltro + "%'";
             }
+            var TableBuffer = new DataTable();
+            MySqlConnection con;
+            ExecutarComando(ComandoFIM, ref TableBuffer, out con);
+            Desconectar(con);
 
+        }
+
+        public Banco(string Servidor, string Porta, string Usuario, string Senha, string BancoDeDados)
+        {
+            Instancia = Instancia + 1;
+            this._Instancia = Instancia;
+            this.Servidor = Servidor;
+            this.Porta = Porta;
+            this.Usuario = Usuario;
+            this.Senha = Senha;
+            this.BancoDeDados = BancoDeDados;
+        }
+        public Banco(Banco Conexao)
+        {
+            this.Servidor = Conexao.Servidor;
+            this.Porta = Conexao.Porta;
+            this.Usuario = Conexao.Usuario;
+            this.Senha = Conexao.Senha;
+            this.BancoDeDados = Conexao.BancoDeDados;
+            Instancia = Instancia + 1;
+            this._Instancia = Instancia;
         }
     }
 }

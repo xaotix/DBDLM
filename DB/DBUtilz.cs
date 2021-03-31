@@ -12,6 +12,7 @@ namespace DB
 {
     internal static class DBUtilz
     {
+        
         public static List<List<T>> quebrar_lista<T>(this List<T> locations, int maximo = 30)
         {
             var list = new List<List<T>>();

@@ -10,6 +10,24 @@ namespace DB
 {
     public class Tabela
     {
+        public void AlimentaDataGrid(System.Windows.Forms.DataGridView Data)
+        {
+            Data.Rows.Clear();
+            Data.Columns.Clear();
+            int c = 1;
+            foreach (string Cab in this.GetColunas())
+            {
+                Data.Columns.Add("N_" + c, Cab);
+                c++;
+            }
+
+
+            foreach (Linha L in this.Linhas)
+            {
+                Data.Rows.Add(L.Valores().ToArray());
+            }
+
+        }
         public override string ToString()
         {
             return "[" + Nome + "]" + "/L:" + Linhas.Count();

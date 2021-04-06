@@ -113,3 +113,6 @@ E:\Documentos\Projetos\DBDLM\DB\obj\Debug\DB.csproj.CopyComplete
 E:\Documentos\Projetos\DBDLM\DB\obj\Debug\DB.dll
 E:\Documentos\Projetos\DBDLM\DB\obj\Debug\DB.pdb
 E:\Documentos\Projetos\DBDLM\DB\obj\Debug\DB.csprojAssemblyReference.cache
+E:\Documentos\Projetos\DLLS\DB.dll.config
+E:\Documentos\Projetos\DLLS\DB.dll
+E:\Documentos\Projetos\DLLS\DB.pdb

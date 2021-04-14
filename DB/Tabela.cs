@@ -10,6 +10,30 @@ namespace DB
 {
     public class Tabela
     {
+        public List<List<string>> GetLista(bool cabecalho = true)
+        {
+            List<List<string>> retorno = new List<List<string>>();
+            List<string> cab = this.GetColunas();
+
+            if(cabecalho)
+            {
+                retorno.Add(cab);
+            }
+
+            foreach (var l in this.Linhas)
+            {
+                List<string> ll = new List<string>();
+                foreach (var c in cab)
+                {
+                    ll.Add(l.Get(c).valor);
+                }
+                retorno.Add(ll);
+            }
+            return retorno;
+        }
+
+        public string Nome { get; set; } = "";
+        public string Banco { get; set; } = "";
         public void AlimentaDataGrid(System.Windows.Forms.DataGridView Data)
         {
             Data.Rows.Clear();
@@ -32,8 +56,6 @@ namespace DB
         {
             return "[" + Nome + "]" + "/L:" + Linhas.Count();
         }
-        public string Nome { get; set; } = "";
-
         public Tabela Carregar(string Arquivo)
         {
 
@@ -64,7 +86,6 @@ namespace DB
             }
             return new Tabela();
         }
-
         public bool Gravar(string Arquivo)
         {
             try
@@ -103,15 +124,11 @@ namespace DB
             }
 
         }
-
-
         public List<string> GetColunas()
         {
             return Linhas.SelectMany(x => x.Header).Distinct().ToList();
         }
-
         public List<Linha> Linhas { get; set; } = new List<Linha>();
-
         public List<Linha> Filtrar  (string Chave, string Valor, bool exato =false)
         {
             List<Linha> Retorno = new List<Linha>();
@@ -124,26 +141,40 @@ namespace DB
                 return Linhas.FindAll(x => x.Celulas.FindAll(y => y.Coluna.ToLower().Replace(" ","") == Chave.ToLower().Replace(" ", "") && y.Valor.ToLower().Replace(" ", "").Contains(Valor.ToLower().Replace(" ", ""))).Count > 0);
             }          
         }
-
         public Tabela(List<Linha> Linhas, string Nome)
         {
             this.Nome = Nome;
             this.Linhas = Linhas;
         }
-
         public Tabela(string Tabela)
         {
             this.Nome = Tabela;
         }
-
         public Tabela Filtro(string Chave,string Valor,bool Exato)
         {
             return new Tabela(Filtrar(Chave, Valor, Exato),Nome);
         }
-
         public Tabela()
         {
 
+        }
+
+        public Tabela(List<Tabela> unir)
+        {
+            var s = unir.SelectMany(x => x.GetColunas()).Distinct().ToList();
+            foreach(var tab in unir)
+            {
+                foreach(var l in tab.Linhas)
+                {
+                    Linha nl = new Linha();
+                    foreach(var c in s)
+                    {
+                        var igual = l.Get(c);
+                        nl.Celulas.Add(new Celula(c, igual));
+                    }
+                    this.Linhas.Add(nl);
+                }
+            }
         }
     }
 

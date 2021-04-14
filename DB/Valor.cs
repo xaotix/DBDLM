@@ -44,6 +44,23 @@ namespace DB
                 }
             }
         }
+        public long Long
+        {
+            get
+            {
+                string comps = valor;
+                if (comps == "") { comps = "0"; }
+                try
+                {
+                    return Convert.ToInt64(Math.Ceiling(Double()));
+                }
+                catch (Exception)
+                {
+
+                    return 0;
+                }
+            }
+        }
         public string valor { get; set; } = "";
         public Valor(string valor, bool existe)
         {

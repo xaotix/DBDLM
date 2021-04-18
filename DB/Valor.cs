@@ -4,6 +4,7 @@ namespace DB
 {
     public class Valor
     {
+
         public bool existe { get; set; } = false;
         public override string ToString()
         {

@@ -9,8 +9,26 @@ namespace DB
     [Serializable]
     public class Linha
     {
+        public override string ToString()
+        {
+            return (Descricao!=""? Descricao : (Tabela!=""?"Tabela: " + Tabela:"")) + " Células: " + this.Celulas.Count;
+        }
+        public Linha Clonar()
+        {
+            DB.Linha retorno = new Linha();
+            retorno.Cadastrou = this.Cadastrou;
+            retorno.Descricao = this.Descricao;
+            retorno.Tabela = this.Tabela;
+            foreach(var c in this.Celulas)
+            {
+                retorno.Celulas.Add(new Celula(c.Coluna, c.Valor));
+            }
+            return retorno;
+        }
+        public string Descricao { get; set; } = "";
+        public string Tabela { get; set; } = "";
         public bool Cadastrou { get; set; } = false;
-       public List<string> Valores()
+        public List<string> Valores()
         {
             return this.Celulas.Select(x => x.Valor).ToList();
         }
@@ -25,11 +43,6 @@ namespace DB
 
             return list;
         }
-        public override string ToString()
-        {
-            return (Tabela!=""?"Tabela: " + Tabela:"") + " Células: " + this.Celulas.Count;
-        }
-        public string Tabela { get; set; } = "";
         public void Add(string coluna, string valor)
         {
             var t = this.Celulas.Find(x => x.Coluna.ToUpper() == coluna.ToUpper());
@@ -78,7 +91,6 @@ namespace DB
                 t.Set(valor);
                 return;
             }
-            this.Celulas.Add(new Celula(coluna, valor));
         }
         public Valor Get(string Coluna)
         {
@@ -87,11 +99,12 @@ namespace DB
                 var s = Celulas.FindAll(x=>x!=null).Find(x => x.Coluna.ToUpper() == Coluna.ToUpper());
                 if (s != null)
                 {
-                    return new Valor(s.Valor,true);
-                   
+                    return new Valor(s.Valor, true);
+
                 }
-                else {
-                    return new Valor("",false);
+                else
+                {
+                    return new Valor("", false);
                 }
 
             }
@@ -104,39 +117,23 @@ namespace DB
 
         public void Set(string Coluna,string valor)
         {
-
-            var Retorno = Celulas.Find(x => x.Coluna.ToUpper() == Coluna.ToUpper());
-            if (Retorno != null)
-            {
-                Retorno.Set(valor);
-            }
+            Add(Coluna, valor);
         }
         public void Set(string Coluna, double valor)
         {
-
-            var Retorno = Celulas.Find(x => x.Coluna.ToUpper() == Coluna.ToUpper());
-            if (Retorno != null)
-            {
-                Retorno.Set(valor.ToString().Replace(",","."));
-            }
+            Add(Coluna, valor);
         }
         public void Set(string Coluna, bool valor)
         {
-
-            var Retorno = Celulas.Find(x => x.Coluna.ToUpper() == Coluna.ToUpper());
-            if (Retorno != null)
-            {
-                Retorno.Set(valor.ToString());
-            }
+            Add(Coluna, valor);
         }
         public void Set(string Coluna, int valor)
         {
-
-            var Retorno = Celulas.Find(x => x.Coluna.ToUpper() == Coluna.ToUpper());
-            if (Retorno != null)
-            {
-                Retorno.Set(valor.ToString());
-            }
+            Add(Coluna, valor);
+        }
+        public void Set(string Coluna, DateTime valor)
+        {
+            Add(Coluna, valor);
         }
 
         public List<Celula> GetValores(string Coluna, string Valor, bool exato = true)
@@ -198,13 +195,10 @@ namespace DB
             }
 
         }
-        [XmlIgnore]
-        public List<string> Header
+
+        public List<string> GetColunas()
         {
-            get
-            {
-                return Celulas.Select(x => x.Coluna).ToList();
-            }
+            return Celulas.Select(x => x.Coluna).ToList();
         }
 
         public List<Celula> Celulas { get; set; } = new List<Celula>();

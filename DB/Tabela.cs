@@ -126,7 +126,7 @@ namespace DB
         }
         public List<string> GetColunas()
         {
-            return Linhas.SelectMany(x => x.Header).Distinct().ToList();
+            return Linhas.SelectMany(x => x.GetColunas()).Distinct().ToList();
         }
         public List<Linha> Linhas { get; set; } = new List<Linha>();
         public List<Linha> Filtrar  (string Chave, string Valor, bool exato =false)

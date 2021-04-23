@@ -91,6 +91,7 @@ namespace DB
                 t.Set(valor);
                 return;
             }
+            this.Celulas.Add(new Celula(coluna, valor));
         }
         public Valor Get(string Coluna)
         {

@@ -116,3 +116,10 @@ E:\Documentos\Projetos\DBDLM\DB\obj\Debug\DB.csprojAssemblyReference.cache
 E:\Documentos\Projetos\DLLS\DB.dll.config
 E:\Documentos\Projetos\DLLS\DB.dll
 E:\Documentos\Projetos\DLLS\DB.pdb
+D:\Projetos\DLLS\DB.dll.config
+D:\Projetos\DLLS\DB.dll
+D:\Projetos\DLLS\DB.pdb
+D:\Projetos\DBDLM\DB\obj\Debug\DB.csproj.CoreCompileInputs.cache
+D:\Projetos\DBDLM\DB\obj\Debug\DB.csproj.CopyComplete
+D:\Projetos\DBDLM\DB\obj\Debug\DB.dll
+D:\Projetos\DBDLM\DB\obj\Debug\DB.pdb

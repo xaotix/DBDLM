@@ -358,3 +358,8 @@ MigrationBackup/
 *.pdb
 *.cache
 *.dll
+DB/Properties/AssemblyInfo.cs
+DB/obj/Debug/DesignTimeResolveAssemblyReferencesInput.cache
+DB/obj/Debug/DesignTimeResolveAssemblyReferences.cache
+DB/obj/Debug/DB.pdb
+DB/obj/Debug/DB.dll

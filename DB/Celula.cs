@@ -77,7 +77,7 @@ namespace DB
         }
         public Celula(string Coluna, object Valor)
         {
-            this.Valor = Valor.ToString();
+            this.Valor = Valor.ToString().Replace(",",".");
             this.Coluna = Coluna;
         }
 

@@ -258,7 +258,7 @@ namespace DB
             }
             catch (Exception ex)
             {
-                Log(ex.Message, ex);
+                Log("Erro tentando conectar:" + this.ToString(), ex);
                 return false;
             }
             return false;
@@ -333,7 +333,7 @@ namespace DB
             }
             catch (Exception ex)
             {
-                Log("Erro", ex + "\n\nComando:" + Comando + "\n\n");
+                Log("Erro"+ "\nComando:" + Comando + "\n\n",ex);
             }
             return MySQLComando;
 

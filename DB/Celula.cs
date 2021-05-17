@@ -12,9 +12,9 @@ namespace DB
         {
             this.Valor = valor;
         }
-        public void Set(double valor)
+        public void Set(double valor, int decimais = 6)
         {
-            this.Valor = valor.ToString().Replace(",",".");
+            this.Valor = Math.Round(valor, decimais).ToString().Replace(",",".");
         }
         public void Set(Valor valor)
         {
@@ -60,9 +60,9 @@ namespace DB
             this.Coluna = Coluna;
         }
 
-        public Celula(string Coluna, double Valor)
+        public Celula(string Coluna, double Valor, int decimais = 6)
         {
-            this.Valor = Valor.ToString().Replace(",",".");
+            this.Valor = Math.Round(Valor, decimais).ToString().Replace(",",".");
             this.Coluna = Coluna;
         }
         public Celula(string Coluna, int Valor)

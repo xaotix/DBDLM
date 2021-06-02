@@ -352,16 +352,10 @@ MigrationBackup/
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
 *.dll
-*.pdb
+obj/Debug/Conexoes.pdb
+*.cache
+*.lref
 *.cache
 *.dll
-*.pdb
-*.cache
-*.dll
-DB/Properties/AssemblyInfo.cs
-DB/obj/Debug/DesignTimeResolveAssemblyReferencesInput.cache
-DB/obj/Debug/DesignTimeResolveAssemblyReferences.cache
-DB/obj/Debug/DB.pdb
-DB/obj/Debug/DB.dll
-DB/obj/Debug/DB.dll
-DB/obj/Debug/DB.pdb
+obj/Debug/*
+DB/obj/Debug/*

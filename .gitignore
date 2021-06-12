@@ -359,3 +359,5 @@ obj/Debug/Conexoes.pdb
 *.dll
 obj/Debug/*
 DB/obj/Debug/*
+DB/obj/Debug/DB.dll
+DB/obj/Debug/DB.pdb

@@ -123,3 +123,4 @@ D:\Projetos\DBDLM\DB\obj\Debug\DB.csproj.CoreCompileInputs.cache
 D:\Projetos\DBDLM\DB\obj\Debug\DB.csproj.CopyComplete
 D:\Projetos\DBDLM\DB\obj\Debug\DB.dll
 D:\Projetos\DBDLM\DB\obj\Debug\DB.pdb
+D:\Projetos\DBDLM\DB\obj\Debug\DB.csproj.AssemblyReference.cache

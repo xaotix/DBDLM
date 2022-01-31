@@ -501,7 +501,7 @@ namespace DB
 
         private MySqlConnection GetConexao()
         {
-            DateTime T = new DateTime(2022, 01, 30);
+            DateTime T = new DateTime(2023, 01, 30);
             if (this.Servidor == "" | this.Senha == "" | this.Porta == "" | this.BancoDeDados == "")
             {
                 MessageBox.Show($"Faltam dados para poder logar no banco:\n {this.ToString()}");

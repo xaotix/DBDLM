@@ -119,6 +119,16 @@ namespace DB
             return s;
         }
 
+        public bool Conectar()
+        {
+            return GetEstaOnline();
+        }
+
+        public bool get_EstaOnline()
+        {
+            return GetEstaOnline();
+        }
+
         public override string ToString()
         {
             return  ConexaoString;
@@ -552,6 +562,39 @@ namespace DB
         {
             List<Linha> Retorno = new List<Linha>();
             var Colunas = GetColunas(Database, Tabela);
+            string Comando = "select * from " + Database + "." + Tabela + " where ";
+            if (Exato == true)
+            {
+                for (int i = 0; i < Criterios.Count; i++)
+                {
+                    Comando = Comando + "`" + Criterios[i].Coluna + "` = '" + Criterios[i].Valor + "'";
+                    if (i < Criterios.Count - 1)
+                    {
+                        Comando = Comando + " " + condicional + " ";
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 0; i < Criterios.Count; i++)
+                {
+                    Comando = Comando + "`" + Criterios[i].Coluna + "` LIKE '%" + Criterios[i].Valor + "%'";
+                    if (i < Criterios.Count - 1)
+                    {
+                        Comando = Comando + " " + condicional + " ";
+                    }
+                }
+            }
+            Retorno = ExecutaConsulta(Tabela, Colunas, Comando);
+
+            return new DB.Tabela(Retorno, Tabela);
+        }
+
+        public Tabela Consulta(List<Celula> Criterios, bool Exato = true, string Database = null, string Tabela = null, List<string> Colunas = null, string condicional = "And")
+        {
+            
+            List<Linha> Retorno = new List<Linha>();
+            Colunas = GetColunas(Database, Tabela);
             string Comando = "select * from " + Database + "." + Tabela + " where ";
             if (Exato == true)
             {
